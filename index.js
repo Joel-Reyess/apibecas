@@ -1,10 +1,16 @@
 const mysql = require('mysql');
 const express = require("express");
 const axios = require('axios');
+const cors = require("cors");
 const app = express();
 const session = require('express-session');
 const path = require('path');
 
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({
+    extended: true
+}));
 
 var connection = mysql.createConnection({
   host     : 'localhost',
@@ -35,7 +41,7 @@ app.use(express.static(path.join(__dirname, 'static')));
 // http://localhost:3000/
 app.get('/api/login', async function(req, res) {
     try {
-      const externalUrl = 'http://localhost:9000'; // Cambia esta URL por la correcta
+      const externalUrl = 'http://127.0.0.1';
       const { data } = await axios.get(externalUrl);
       res.send(data);
     } catch (error) {
@@ -74,17 +80,88 @@ app.post('/api/login', function(req, res) {
 });
 
 // http://localhost:3000/api/login
-app.get('/api/login', function(req, response) {
+app.get('/api/login', function(req, res) {
 	// If the user is loggedin
 	if (req.session.loggedin) {
 		// Output correo
-		response.send('Te has logueado satisfactoriamente:, ' + req.session.correo + '!');
+		res.send('Te has logueado satisfactoriamente:, ' + req.session.correo + '!');
 	} else {
 		// Not logged in
-		response.send('¡Inicia sesión para ver esta página!');
+		res.send('¡Inicia sesión para ver esta página!');
 	}
-	response.end();
+	res.end();
+});
+
+const createProcedureQuery = `
+  CREATE PROCEDURE InsertarSolicitud(
+    IN p_nombre VARCHAR(255),
+    IN p_matricula INT,
+    IN p_curp VARCHAR(18),
+    IN p_telefono INT,
+    IN p_correoinstitucional VARCHAR(255),
+    IN p_beca VARCHAR(255),
+    IN p_carrera VARCHAR(255),
+    IN p_area VARCHAR(255),
+    IN p_grado VARCHAR(255),
+    IN p_cuatrimestre VARCHAR(255),
+    IN p_grupo CHAR(1),
+    IN p_correotutor VARCHAR(255),
+    IN p_genero VARCHAR(255),
+    IN p_estado VARCHAR(255)
+  )
+  BEGIN
+    INSERT INTO solicitud (nombre, matricula, curp, telefono, correoinstitucional, beca, carrera, area, grado, cuatrimestre, grupo, correotutor, genero, estado)
+    VALUES (p_nombre, p_matricula, p_curp, p_telefono, p_correoinstitucional, p_beca, p_carrera, p_area, p_grado, p_cuatrimestre, p_grupo, p_correotutor, p_genero, p_estado);
+  END
+`;
+const checkProcedureQuery = `
+  SELECT COUNT(*) AS count
+  FROM information_schema.ROUTINES
+  WHERE ROUTINE_TYPE = 'PROCEDURE' AND ROUTINE_SCHEMA = 'testbeca' AND ROUTINE_NAME = 'InsertarSolicitud'
+`;
+
+connection.query(checkProcedureQuery, function(error, results, fields) {
+  if (error) throw error;
+
+  const procedureExists = results[0].count > 0;
+
+  if (!procedureExists) {
+    connection.query(createProcedureQuery, function(error, results, fields) {
+      if (error) throw error;
+      console.log("Procedimiento almacenado creado exitosamente");
+    });
+  } else {
+    console.log("El procedimiento ya existe");
+  }
+});
+
+app.post('/api/form', function(req, res) {
+  let nombre = req.body.nombre;
+  let matricula = req.body.matricula;
+  let curp = req.body.curp;
+  let telefono = req.body.telefono;
+  let correoinstitucional = req.body.correoinstitucional;
+  let beca = req.body.beca;
+  let carrera = req.body.carrera;
+  let area = req.body.area;
+  let grado = req.body.grado;
+  let cuatrimestre = req.body.cuatrimestre;
+  let grupo = req.body.grupo;
+  let correotutor = req.body.correotutor;
+  let genero = req.body.genero;
+  let estado = req.body.estado;
+
+  if (nombre && matricula && curp && telefono && correoinstitucional && beca && carrera && area && grado && cuatrimestre
+	&& grupo && correotutor && genero && estado) {
+    connection.query('CALL InsertarSolicitud(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [nombre, matricula, curp, telefono, correoinstitucional,
+	beca, carrera, area, grado, cuatrimestre, grupo, correotutor, genero, estado], function(error, results, fields) {
+      if (error) throw error;
+      res.redirect('/api/form');
+      res.end();
+    });
+  } else {
+    res.send('Por favor ingresa Nombre, Matrícula y CURP!');
+  }
 });
 
 app.listen(3000);
-
