@@ -1,5 +1,6 @@
 const mysql = require('mysql');
 const express = require("express");
+//const fileUpload = require('express-fileupload');
 const axios = require('axios');
 const cors = require("cors");
 const app = express();
@@ -7,6 +8,7 @@ const session = require('express-session');
 const path = require('path');
 
 app.use(cors());
+app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({
     extended: true
@@ -92,50 +94,7 @@ app.get('/api/login', function(req, res) {
 	res.end();
 });
 
-const createProcedureQuery = `
-  CREATE PROCEDURE InsertarSolicitud(
-    IN p_nombre VARCHAR(255),
-    IN p_matricula INT,
-    IN p_curp VARCHAR(18),
-    IN p_telefono INT,
-    IN p_correoinstitucional VARCHAR(255),
-    IN p_beca VARCHAR(255),
-    IN p_carrera VARCHAR(255),
-    IN p_area VARCHAR(255),
-    IN p_grado VARCHAR(255),
-    IN p_cuatrimestre VARCHAR(255),
-    IN p_grupo CHAR(1),
-    IN p_correotutor VARCHAR(255),
-    IN p_genero VARCHAR(255),
-    IN p_estado VARCHAR(255)
-  )
-  BEGIN
-    INSERT INTO solicitud (nombre, matricula, curp, telefono, correoinstitucional, beca, carrera, area, grado, cuatrimestre, grupo, correotutor, genero, estado)
-    VALUES (p_nombre, p_matricula, p_curp, p_telefono, p_correoinstitucional, p_beca, p_carrera, p_area, p_grado, p_cuatrimestre, p_grupo, p_correotutor, p_genero, p_estado);
-  END
-`;
-const checkProcedureQuery = `
-  SELECT COUNT(*) AS count
-  FROM information_schema.ROUTINES
-  WHERE ROUTINE_TYPE = 'PROCEDURE' AND ROUTINE_SCHEMA = 'testbeca' AND ROUTINE_NAME = 'InsertarSolicitud'
-`;
-
-connection.query(checkProcedureQuery, function(error, results, fields) {
-  if (error) throw error;
-
-  const procedureExists = results[0].count > 0;
-
-  if (!procedureExists) {
-    connection.query(createProcedureQuery, function(error, results, fields) {
-      if (error) throw error;
-      console.log("Procedimiento almacenado creado exitosamente");
-    });
-  } else {
-    console.log("El procedimiento ya existe");
-  }
-});
-
-app.post('/api/form', function(req, res) {
+app.post('/api/form', async function(req, res) {
   let nombre = req.body.nombre;
   let matricula = req.body.matricula;
   let curp = req.body.curp;
@@ -153,15 +112,31 @@ app.post('/api/form', function(req, res) {
 
   if (nombre && matricula && curp && telefono && correoinstitucional && beca && carrera && area && grado && cuatrimestre
 	&& grupo && correotutor && genero && estado) {
-    connection.query('CALL InsertarSolicitud(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [nombre, matricula, curp, telefono, correoinstitucional,
-	beca, carrera, area, grado, cuatrimestre, grupo, correotutor, genero, estado], function(error, results, fields) {
-      if (error) throw error;
-      res.redirect('/api/form');
-      res.end();
-    });
+    connection.query(
+      'INSERT INTO solicitud (nombre, matricula, curp, telefono, correoinstitucional, beca, carrera, area, grado, cuatrimestre, grupo, correotutor, genero, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [nombre, matricula, curp, telefono, correoinstitucional, beca, carrera, area, grado, cuatrimestre, grupo, correotutor, genero, estado],
+      function(error, results, fields) {
+        if (error) throw error;
+        res.redirect('/api/form');
+        res.end();
+      }
+    );
   } else {
     res.send('Por favor ingresa Nombre, Matrícula y CURP!');
   }
+});
+
+// http://localhost:3000/api/form
+app.get('/api/form', function(req, res) {
+  connection.query('SELECT * FROM solicitud ORDER BY id DESC LIMIT 1', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener los datos:', error);
+      res.status(500).send('Error al obtener los datos');
+    } else {
+      // Devuelve los datos obtenidos de la base de datos como respuesta JSON
+      res.json(results[0]);
+    }
+  });
 });
 
 app.listen(3000);
