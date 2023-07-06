@@ -1,6 +1,7 @@
 const mysql = require('mysql');
 const express = require("express");
 //const fileUpload = require('express-fileupload');
+const multer  = require('multer');
 const axios = require('axios');
 const cors = require("cors");
 const app = express();
@@ -135,6 +136,19 @@ app.get('/api/form', function(req, res) {
     } else {
       // Devuelve los datos obtenidos de la base de datos como respuesta JSON
       res.json(results[0]);
+    }
+  });
+});
+
+app.get("/api/becas", (req, res) => {
+  const query = "SELECT * FROM beca WHERE id == 1"; // Cambia "becas" por el nombre de tu tabla de becas
+
+  connection.query(query, (error, results) => {
+    if (error) {
+      console.error("Error al obtener las becas:", error);
+      res.status(500).json({ error: "Error al obtener las becas" });
+    } else {
+      res.json(results);
     }
   });
 });
