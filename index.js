@@ -140,8 +140,19 @@ app.get('/api/form', function(req, res) {
   });
 });
 
-app.get("/api/becas", (req, res) => {
-  const query = "SELECT * FROM beca WHERE id == 1"; // Cambia "becas" por el nombre de tu tabla de becas
+app.get('/api/becas/1', async function(req, res) {
+  try {
+    const externalUrl = 'http://127.0.0.1';
+    const { data } = await axios.get(externalUrl);
+    res.send(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error al obtener los datos');
+  }
+});
+
+app.get("/api/becas/1", (req, res) => {
+  const query = "SELECT * FROM beca INNER JOIN solicitud ON beca.idbeca = solicitud.beca WHERE idbeca = 1;";
 
   connection.query(query, (error, results) => {
     if (error) {
