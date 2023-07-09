@@ -95,6 +95,17 @@ app.get('/api/login', function(req, res) {
 	res.end();
 });
 
+app.get('/api/form', async function(req, res) {
+  try {
+    const externalUrl = 'http://127.0.0.1';
+    const { data } = await axios.get(externalUrl);
+    res.send(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error al obtener los datos');
+  }
+});
+
 app.post('/api/form', async function(req, res) {
   let nombre = req.body.nombre;
   let matricula = req.body.matricula;
@@ -117,9 +128,12 @@ app.post('/api/form', async function(req, res) {
       'INSERT INTO solicitud (nombre, matricula, curp, telefono, correoinstitucional, beca, carrera, area, grado, cuatrimestre, grupo, correotutor, genero, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [nombre, matricula, curp, telefono, correoinstitucional, beca, carrera, area, grado, cuatrimestre, grupo, correotutor, genero, estado],
       function(error, results, fields) {
-        if (error) throw error;
-        res.redirect('/api/form');
-        res.end();
+        if (error) {
+          console.error('Error al insertar los datos:', error);
+          res.status(500).send('Error al insertar los datos');
+        } else {
+          res.status(200).send('Datos insertados correctamente');
+        }
       }
     );
   } else {
@@ -140,24 +154,67 @@ app.get('/api/form', function(req, res) {
   });
 });
 
-app.get('/api/becas/1', async function(req, res) {
-  try {
-    const externalUrl = 'http://127.0.0.1';
-    const { data } = await axios.get(externalUrl);
-    res.send(data);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Error al obtener los datos');
-  }
+
+
+app.get('/api/becas/1', function(req, res) {
+  connection.query('SELECT * FROM beca WHERE idbeca = 1', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener las becas:', error);
+      res.status(500).json({ error: 'Error al obtener las becas' });
+    } else {
+      res.json(results[0]);
+    }
+  });
 });
 
-app.get("/api/becas/1", (req, res) => {
-  const query = "SELECT * FROM beca INNER JOIN solicitud ON beca.idbeca = solicitud.beca WHERE idbeca = 1;";
-
-  connection.query(query, (error, results) => {
+app.get('/api/estados/1', function(req, res) {
+  connection.query('SELECT * FROM estado WHERE idestado = 1', function(error, results, fields) {
     if (error) {
-      console.error("Error al obtener las becas:", error);
-      res.status(500).json({ error: "Error al obtener las becas" });
+      console.error('Error al obtener el estado:', error);
+      res.status(500).json({ error: 'Error al obtener el estado' });
+    } else {
+      res.json(results[0]);
+    }
+  });
+});
+
+app.get('/api/carrera', function(req, res) {
+  connection.query('SELECT * FROM carrera', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener la carrera:', error);
+      res.status(500).json({ error: 'Error al obtener la carrera' });
+    } else {
+      res.json(results);
+    }
+  });
+});
+
+app.get('/api/area', function(req, res) {
+  connection.query('SELECT * FROM area', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener el area:', error);
+      res.status(500).json({ error: 'Error al obtener el area' });
+    } else {
+      res.json(results);
+    }
+  });
+});
+
+app.get('/api/grado', function(req, res) {
+  connection.query('SELECT * FROM grado', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener el grado:', error);
+      res.status(500).json({ error: 'Error al obtener el grado' });
+    } else {
+      res.json(results);
+    }
+  });
+});
+app.get('/api/genero', function(req, res) {
+  connection.query('SELECT * FROM genero', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener el genero:', error);
+      res.status(500).json({ error: 'Error al obtener el genero' });
     } else {
       res.json(results);
     }
