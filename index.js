@@ -112,21 +112,21 @@ app.post('/api/form', async function(req, res) {
   let curp = req.body.curp;
   let telefono = req.body.telefono;
   let correoinstitucional = req.body.correoinstitucional;
-  let beca = req.body.beca;
-  let carrera = req.body.carrera;
-  let area = req.body.area;
-  let grado = req.body.grado;
+  let idbeca = req.body.beca;
+  let idcarrera = req.body.carrera;
+  let idarea = req.body.area;
+  let idgrado = req.body.grado;
   let cuatrimestre = req.body.cuatrimestre;
   let grupo = req.body.grupo;
   let correotutor = req.body.correotutor;
-  let genero = req.body.genero;
-  let estado = req.body.estado;
+  let idgenero = req.body.genero;
+  let idestado = req.body.estado;
 
-  if (nombre && matricula && curp && telefono && correoinstitucional && beca && carrera && area && grado && cuatrimestre
-	&& grupo && correotutor && genero && estado) {
+  if (nombre && matricula && curp && telefono && correoinstitucional && idbeca && idcarrera && idarea && idgrado && cuatrimestre
+	&& grupo && correotutor && idgenero && idestado) {
     connection.query(
-      'INSERT INTO solicitud (nombre, matricula, curp, telefono, correoinstitucional, beca, carrera, area, grado, cuatrimestre, grupo, correotutor, genero, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [nombre, matricula, curp, telefono, correoinstitucional, beca, carrera, area, grado, cuatrimestre, grupo, correotutor, genero, estado],
+      'INSERT INTO solicitud (nombre, matricula, curp, telefono, correoinstitucional, idbeca, idcarrera, idarea, idgrado, cuatrimestre, grupo, correotutor, idgenero, idestado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [nombre, matricula, curp, telefono, correoinstitucional, idbeca, idcarrera, idarea, idgrado, cuatrimestre, grupo, correotutor, idgenero, idestado],
       function(error, results, fields) {
         if (error) {
           console.error('Error al insertar los datos:', error);
