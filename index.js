@@ -189,6 +189,54 @@ app.get('/api/becas/2', function(req, res) {
   });
 });
 
+connection.query(`
+  CREATE PROCEDURE GetBecaDep(IN becaId INT)
+  BEGIN
+    SELECT * FROM beca WHERE idbeca = becaId;
+  END
+`, function(error, results, fields) {
+  if (error) {
+    console.error('Error al crear el procedimiento almacenado:', error);
+  } else {
+    console.log('Procedimiento almacenado creado exitosamente');
+  }
+});
+
+app.get('/api/becas/3', function(req, res) {
+  connection.query('CALL GetBecaDep(3)', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener las becas:', error);
+      res.status(500).json({ error: 'Error al obtener las becas' });
+    } else {
+      res.json(results[0][0]);
+    }
+  });
+});
+
+connection.query(`
+  CREATE PROCEDURE GetBecaEcono(IN becaId INT)
+  BEGIN
+    SELECT * FROM beca WHERE idbeca = becaId;
+  END
+`, function(error, results, fields) {
+  if (error) {
+    console.error('Error al crear el procedimiento almacenado:', error);
+  } else {
+    console.log('Procedimiento almacenado creado exitosamente');
+  }
+});
+
+app.get('/api/becas/4', function(req, res) {
+  connection.query('CALL GetBecaEcono(4)', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener las becas:', error);
+      res.status(500).json({ error: 'Error al obtener las becas' });
+    } else {
+      res.json(results[0][0]);
+    }
+  });
+});
+
 app.get('/api/estados/1', function(req, res) {
   connection.query('SELECT * FROM estado WHERE idestado = 1', function(error, results, fields) {
     if (error) {
