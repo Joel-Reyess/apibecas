@@ -154,8 +154,6 @@ app.get('/api/form', function(req, res) {
   });
 });
 
-
-
 app.get('/api/becas/1', function(req, res) {
   connection.query('SELECT * FROM beca WHERE idbeca = 1', function(error, results, fields) {
     if (error) {
@@ -163,6 +161,30 @@ app.get('/api/becas/1', function(req, res) {
       res.status(500).json({ error: 'Error al obtener las becas' });
     } else {
       res.json(results[0]);
+    }
+  });
+});
+
+connection.query(`
+  CREATE PROCEDURE GetBecaById(IN becaId INT)
+  BEGIN
+    SELECT * FROM beca WHERE idbeca = becaId;
+  END
+`, function(error, results, fields) {
+  if (error) {
+    console.error('Error al crear el procedimiento almacenado:', error);
+  } else {
+    console.log('Procedimiento almacenado creado exitosamente');
+  }
+});
+
+app.get('/api/becas/2', function(req, res) {
+  connection.query('CALL GetBecaById(2)', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener las becas:', error);
+      res.status(500).json({ error: 'Error al obtener las becas' });
+    } else {
+      res.json(results[0][0]);
     }
   });
 });
