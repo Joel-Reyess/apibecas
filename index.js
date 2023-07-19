@@ -190,15 +190,15 @@ app.get('/api/becas/2', function(req, res) {
 });
 
 connection.query(`
-  CREATE PROCEDURE GetBecaDep(IN becaId INT)
+  CREATE PROCEDURE GetBecaDep(IN becaIdep INT)
   BEGIN
-    SELECT * FROM beca WHERE idbeca = becaId;
+    SELECT * FROM beca WHERE idbeca = becaIdep;
   END
 `, function(error, results, fields) {
   if (error) {
     console.error('Error al crear el procedimiento almacenado:', error);
   } else {
-    console.log('Procedimiento almacenado creado exitosamente');
+    console.log('Procedimiento almacenado deportivo creado exitosamente');
   }
 });
 
@@ -213,16 +213,19 @@ app.get('/api/becas/3', function(req, res) {
   });
 });
 
-connection.query(`
-  CREATE PROCEDURE GetBecaEcono(IN becaId INT)
-  BEGIN
-    SELECT * FROM beca WHERE idbeca = becaId;
-  END
-`, function(error, results, fields) {
+connection.query('DROP PROCEDURE IF EXISTS GetBecaEcono', function(error, results, fields) {
   if (error) {
-    console.error('Error al crear el procedimiento almacenado:', error);
+    console.error('Error al eliminar el procedimiento almacenado:', error);
   } else {
-    console.log('Procedimiento almacenado creado exitosamente');
+    console.log('Procedimiento almacenado eliminado exitosamente');
+    // Aquí puedes crear el procedimiento almacenado nuevamente
+    connection.query('CREATE PROCEDURE GetBecaEcono(IN becaId INT) BEGIN SELECT * FROM beca WHERE idbeca = becaId; END', function(error, results, fields) {
+      if (error) {
+        console.error('Error al crear el procedimiento almacenado:', error);
+      } else {
+        console.log('Procedimiento almacenado creado para beca economica exitosamente');
+      }
+    });
   }
 });
 
@@ -237,6 +240,33 @@ app.get('/api/becas/4', function(req, res) {
   });
 });
 
+app.get('/api/columns', function(req, res) {
+  connection.query(`
+    CREATE PROCEDURE GetAllRecords(IN solicitud)
+    BEGIN
+      SELECT nombre, matricula, correoinstitucional, idbeca, idcarrera, idarea, idgenero FROM solicitud;
+    END
+  `, function(error, results, fields) {   
+    if (error) {
+      console.error('Error al crear el procedimiento almacenado de obtener multiples datos', error);
+    } else {
+      connection.query('CALL GetAllRecords(<nombre_de_tu_tabla>)', function(error, results, fields) {
+        if (error) {
+          console.error('Error al ejecutar el procedimiento almacenado GetAllRecords', error);
+          res.status(500).json({ error: 'Error al ejecutar el procedimiento almacenado' });
+        } else {
+          // Asignar los resultados a la variable data
+          data.value = results[0];
+          console.log('Se obtuvieron las columnas de las solicitudes correctamente');
+          res.json(results[0]);
+        }
+      });
+    }
+  });
+});
+
+
+
 app.get('/api/estados/1', function(req, res) {
   connection.query('SELECT * FROM estado WHERE idestado = 1', function(error, results, fields) {
     if (error) {
@@ -244,6 +274,17 @@ app.get('/api/estados/1', function(req, res) {
       res.status(500).json({ error: 'Error al obtener el estado' });
     } else {
       res.json(results[0]);
+    }
+  });
+});
+
+app.get('/api/becas/all', function(req, res) {
+  connection.query('SELECT * FROM beca', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener la beca:', error);
+      res.status(500).json({ error: 'Error al obtener la beca' });
+    } else {
+      res.json(results);
     }
   });
 });
@@ -289,6 +330,52 @@ app.get('/api/genero', function(req, res) {
       res.json(results);
     }
   });
+});
+
+app.post('/api/form/carta', async function(req, res) {
+  let nombre = req.body.nombre;
+  let matricula = req.body.matricula;
+  let domicilio = req.body.domicilio;
+  let telefono = req.body.telefono;
+  let celular = req.body.celular;
+  let correoper = req.body.correoper;
+  let nacimiento = req.body.nacimiento;
+  let estadocivil = req.body.estadocivil;
+  let idgenero = req.body.genero;
+  let idbeca = req.body.beca;
+  let nivelestudios = req.body.nivelestudios;
+  let nombreescuela = req.body.nombreescuela;
+  let tipoescuela = req.body.tipoescuela;
+  let municipio = req.body.municipio;
+  let promedio = req.body.promedio;
+  let idcarrera = req.body.carrera;
+  let idarea = req.body.area;
+  let cuatrisoli = req.body.cuatrisoli;
+  let promedioult = req.body.promedioult;
+  let grupo = req.body.grupo;
+  let apoyo = req.body.apoyo;
+  let nombreapoyo = req.body.nombreapoyo;
+  let cuanto = req.body.cuanto;
+  let motivo = req.body.motivo;
+  
+
+  if (nombre && matricula && domicilio && telefono && celular && correoper && nacimiento && estadocivil && idgenero && idbeca && nivelestudios && nombreescuela && tipoescuela && municipio && promedio && idcarrera && idarea && cuatrisoli && promedioult
+	&& grupo && apoyo && nombreapoyo && cuanto && motivo) {
+    connection.query(
+      'INSERT INTO carta (nombre, matricula, domicilio, telefono, celular, correoper, nacimiento, estadocivil, idgenero, idbeca, nivelestudios, nombreescuela, tipoescuela, municipio, promedio, idcarrera, idarea, cuatrisoli, promedioult, grupo, apoyo, nombreapoyo, cuanto, motivo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?)',
+      [nombre, matricula, domicilio, telefono, celular, correoper, nacimiento, estadocivil, idgenero, idbeca, nivelestudios, nombreescuela, tipoescuela, municipio, promedio, idcarrera, idarea, cuatrisoli, promedioult, grupo, apoyo, nombreapoyo, cuanto, motivo],
+      function(error, results, fields) {
+        if (error) {
+          console.error('Error al insertar los datos:', error);
+          res.status(500).send('Error al insertar los datos');
+        } else {
+          res.status(200).send('Datos insertados correctamente');
+        }
+      }
+    );
+  } else {
+    res.send('Por favor ingresa Nombre, Matrícula y CURP!');
+  }
 });
 
 app.listen(3000);
