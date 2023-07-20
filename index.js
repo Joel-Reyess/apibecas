@@ -202,7 +202,7 @@ connection.query(`
   }
 });
 
-app.get('/api/becas/3', function(req, res) {
+app.get('/api/becas/3', async function(req, res) {
   connection.query('CALL GetBecaDep(3)', function(error, results, fields) {
     if (error) {
       console.error('Error al obtener las becas:', error);
@@ -213,7 +213,7 @@ app.get('/api/becas/3', function(req, res) {
   });
 });
 
-connection.query('DROP PROCEDURE IF EXISTS GetBecaEcono', function(error, results, fields) {
+connection.query('DROP PROCEDURE IF EXISTS GetBecaEcono', async function(error, results, fields) {
   if (error) {
     console.error('Error al eliminar el procedimiento almacenado:', error);
   } else {
@@ -229,7 +229,7 @@ connection.query('DROP PROCEDURE IF EXISTS GetBecaEcono', function(error, result
   }
 });
 
-app.get('/api/becas/4', function(req, res) {
+app.get('/api/becas/4', async function(req, res) {
   connection.query('CALL GetBecaEcono(4)', function(error, results, fields) {
     if (error) {
       console.error('Error al obtener las becas:', error);
@@ -240,7 +240,7 @@ app.get('/api/becas/4', function(req, res) {
   });
 });
 
-app.get('/api/columns', function(req, res) {
+app.get('/api/columns', async function(req, res) {
   connection.query(`
     CREATE PROCEDURE GetAllRecords(IN solicitud)
     BEGIN
@@ -267,7 +267,7 @@ app.get('/api/columns', function(req, res) {
 
 
 
-app.get('/api/estados/1', function(req, res) {
+app.get('/api/estados/1', async function(req, res) {
   connection.query('SELECT * FROM estado WHERE idestado = 1', function(error, results, fields) {
     if (error) {
       console.error('Error al obtener el estado:', error);
@@ -278,7 +278,7 @@ app.get('/api/estados/1', function(req, res) {
   });
 });
 
-app.get('/api/becas/all', function(req, res) {
+app.get('/api/becas/all', async function(req, res) {
   connection.query('SELECT * FROM beca', function(error, results, fields) {
     if (error) {
       console.error('Error al obtener la beca:', error);
@@ -289,7 +289,7 @@ app.get('/api/becas/all', function(req, res) {
   });
 });
 
-app.get('/api/carrera', function(req, res) {
+app.get('/api/carrera', async function(req, res) {
   connection.query('SELECT * FROM carrera', function(error, results, fields) {
     if (error) {
       console.error('Error al obtener la carrera:', error);
@@ -300,7 +300,7 @@ app.get('/api/carrera', function(req, res) {
   });
 });
 
-app.get('/api/area', function(req, res) {
+app.get('/api/area', async function(req, res) {
   connection.query('SELECT * FROM area', function(error, results, fields) {
     if (error) {
       console.error('Error al obtener el area:', error);
@@ -311,7 +311,7 @@ app.get('/api/area', function(req, res) {
   });
 });
 
-app.get('/api/grado', function(req, res) {
+app.get('/api/grado', async function(req, res) {
   connection.query('SELECT * FROM grado', function(error, results, fields) {
     if (error) {
       console.error('Error al obtener el grado:', error);
@@ -321,7 +321,7 @@ app.get('/api/grado', function(req, res) {
     }
   });
 });
-app.get('/api/genero', function(req, res) {
+app.get('/api/genero', async function(req, res) {
   connection.query('SELECT * FROM genero', function(error, results, fields) {
     if (error) {
       console.error('Error al obtener el genero:', error);
@@ -341,29 +341,29 @@ app.post('/api/form/carta', async function(req, res) {
   let correoper = req.body.correoper;
   let nacimiento = req.body.nacimiento;
   let estadocivil = req.body.estadocivil;
-  let idgenero = req.body.genero;
-  let idbeca = req.body.beca;
+  let genero = req.body.genero;
+  let beca = req.body.beca;
   let nivelestudios = req.body.nivelestudios;
   let nombreescuela = req.body.nombreescuela;
   let tipoescuela = req.body.tipoescuela;
   let municipio = req.body.municipio;
   let promedio = req.body.promedio;
-  let idcarrera = req.body.carrera;
-  let idarea = req.body.area;
+  let carrera = req.body.carrera;
+  let area = req.body.area;
   let cuatrisoli = req.body.cuatrisoli;
-  let promedioult = req.body.promedioult;
   let grupo = req.body.grupo;
+  let promedioult = req.body.promedioult;
   let apoyo = req.body.apoyo;
   let nombreapoyo = req.body.nombreapoyo;
   let cuanto = req.body.cuanto;
   let motivo = req.body.motivo;
   
 
-  if (nombre && matricula && domicilio && telefono && celular && correoper && nacimiento && estadocivil && idgenero && idbeca && nivelestudios && nombreescuela && tipoescuela && municipio && promedio && idcarrera && idarea && cuatrisoli && promedioult
+  if (nombre && matricula && domicilio && telefono && celular && correoper && nacimiento && estadocivil && genero && beca && nivelestudios && nombreescuela && tipoescuela && municipio && promedio && carrera && area && cuatrisoli && promedioult
 	&& grupo && apoyo && nombreapoyo && cuanto && motivo) {
     connection.query(
-      'INSERT INTO carta (nombre, matricula, domicilio, telefono, celular, correoper, nacimiento, estadocivil, idgenero, idbeca, nivelestudios, nombreescuela, tipoescuela, municipio, promedio, idcarrera, idarea, cuatrisoli, promedioult, grupo, apoyo, nombreapoyo, cuanto, motivo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?)',
-      [nombre, matricula, domicilio, telefono, celular, correoper, nacimiento, estadocivil, idgenero, idbeca, nivelestudios, nombreescuela, tipoescuela, municipio, promedio, idcarrera, idarea, cuatrisoli, promedioult, grupo, apoyo, nombreapoyo, cuanto, motivo],
+      'INSERT INTO carta (nombre, matricula, domicilio, telefono, celular, correoper, nacimiento, estadocivil, genero, beca, nivelestudios, nombreescuela, tipoescuela, municipio, promedio, carrera, area, cuatrisoli, promedioult, grupo, apoyo, nombreapoyo, cuanto, motivo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?)',
+      [nombre, matricula, domicilio, telefono, celular, correoper, nacimiento, estadocivil, genero, beca, nivelestudios, nombreescuela, tipoescuela, municipio, promedio, carrera, area, cuatrisoli, promedioult, grupo, apoyo, nombreapoyo, cuanto, motivo],
       function(error, results, fields) {
         if (error) {
           console.error('Error al insertar los datos:', error);
