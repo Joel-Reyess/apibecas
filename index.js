@@ -374,7 +374,63 @@ app.post('/api/form/carta', async function(req, res) {
       }
     );
   } else {
-    res.send('Por favor ingresa Nombre, Matrícula y CURP!');
+    res.send('Por favor ingresa bien la carta de solicitud!');
+  }
+});
+
+app.post('/api/form/socio', async function(req, res) {
+  let nombre = req.body.nombre;
+  let nacimiento = req.body.nacimiento;
+  let domicilio = req.body.domicilio;
+  let conquienvive = req.body.conquienvive;
+  let telefono = req.body.telefono;
+  let celular = req.body.celular;
+  let transporte = req.body.transporte;
+  let ingreso = req.body.ingreso;
+  let padre = req.body.padre;
+  let madre = req.body.madre;
+  let hermanos = req.body.hermanos;
+  let total = req.body.total;
+  let alimentacion = req.body.alimentacion;
+  let telefonia = req.body.telefonia;
+  let credito = req.body.credito;
+  let renta = req.body.renta;
+  let servicios = req.body.servicios;
+  let abonos = req.body.abonos;
+  let importe = req.body.importe;
+  let totale = req.body.totale;
+  let vivienda = req.body.vivienda;
+  let paredes = req.body.paredes;
+  let techos = req.body.techos;
+  let pisos = req.body.pisos;
+  let mobiliario = req.body.mobiliario;
+  let servmedico = req.body.servmedico;
+  let asistencia = req.body.asistencia;
+  let cronicas = req.body.cronicas;
+  let tipo = req.body.tipo;
+  let consumo = req.body.consumo;
+  let finde = req.body.finde;
+  let actividades = req.body.actividades;
+  let traslado = req.body.traslado;
+  let mediotra = req.body.mediotra;
+  
+
+  if (nombre && nacimiento && domicilio && conquienvive && telefono && celular && transporte && ingreso && padre && madre && hermanos && total && alimentacion && telefonia && credito && renta && servicios && abonos && importe && totale
+	&& vivienda && paredes && techos && pisos && mobiliario && servmedico && asistencia && cronicas && tipo && consumo && finde && actividades && traslado && mediotra) {
+    connection.query(
+      'INSERT INTO socioeconomicos (nombre, nacimiento, conquienvive, domicilio, telefono, celular, transporte, ingreso, padre, madre, hermanos, total, alimentacion, telefonia, credito, renta, servicios, abonos, importe, totale, vivienda, paredes, techos, pisos, mobiliario, servmedico, asistencia, cronicas, tipo, consumo, finde, actividades, traslado, mediotra) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [nombre, nacimiento, conquienvive, domicilio, telefono, celular, transporte, ingreso, padre, madre, hermanos, total, alimentacion, telefonia, credito, renta, servicios, abonos, importe, totale, vivienda, paredes, techos, pisos, mobiliario, servmedico, asistencia, cronicas, tipo, consumo, finde, actividades, traslado, mediotra],
+      function(error, results, fields) {
+        if (error) {
+          console.error('Error al insertar los datos:', error);
+          res.status(500).send('Error al insertar los datos');
+        } else {
+          res.status(200).send('Datos insertados correctamente');
+        }
+      }
+    );
+  } else {
+    res.send('Por favor ingresa bien los datos de los socioeconomicos!');
   }
 });
 
