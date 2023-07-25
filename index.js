@@ -2,11 +2,13 @@ const mysql = require('mysql');
 const express = require("express");
 //const fileUpload = require('express-fileupload');
 const multer  = require('multer');
+//const upload = multer({ dest: 'uploads/' })
 const axios = require('axios');
 const cors = require("cors");
 const app = express();
 const session = require('express-session');
 const path = require('path');
+const fs = require('fs');
 
 app.use(cors());
 app.use(express.static('public'));
@@ -40,6 +42,60 @@ app.use(session({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'static')));
+
+
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); // Establece la carpeta de destino para los archivos cargados
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname); // Establece el nombre único para el archivo
+  }
+});
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, 'uploads/'); // Establece la carpeta de destino para los archivos cargados
+    },
+    filename: function (req, file, cb) {
+      cb(null, Date.now() + '-' + file.originalname); // Establece el nombre único para el archivo
+    }
+  })
+});
+
+app.post('/api/upload', upload.array('pdfFiles, credencial, boleta, comprobante, compromiso, conducta', 12), function (req, res, next) {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).send('No se cargaron archivos.');
+  }
+
+  // Accede a los archivos cargados utilizando req.files
+  console.log('Archivos cargados:', req.files);
+
+  // Array para almacenar las rutas de los archivos cargados
+  const fileUrls = [];
+
+  // Recorre los archivos cargados y almacena sus rutas en el array
+  req.files.forEach(file => {
+    const filePath = path.join(__dirname, file.path);
+    fileUrls.push(filePath);
+  });
+
+  // Aquí puedes guardar las rutas de los archivos en la base de datos
+  // Utiliza la conexión "connection" para ejecutar la consulta de inserción
+  const insertQuery = 'INSERT INTO documentos (documento) VALUES ?';
+  connection.query(insertQuery, [fileUrls.map(url => [url])], function (err, result) {
+    if (err) {
+      console.log(err);
+      return res.status(500).send('Error al insertar las rutas de los archivos en la base de datos.');
+    }
+
+    console.log('Rutas de archivos insertadas en la base de datos:', result);
+
+    res.send('Archivos cargados exitosamente.');
+  });
+});
 
 // http://localhost:3000/
 app.get('/api/login', async function(req, res) {
@@ -242,30 +298,23 @@ app.get('/api/becas/4', async function(req, res) {
 
 app.get('/api/columns', async function(req, res) {
   connection.query(`
-    CREATE PROCEDURE GetAllRecords(IN solicitud)
-    BEGIN
-      SELECT nombre, matricula, correoinstitucional, idbeca, idcarrera, idarea, idgenero FROM solicitud;
-    END
+    SELECT s.nombre, b.beca as beca, c.carrera as carrera, a.area as area, g.grado as grado, gen.genero as genero
+    FROM solicitud s
+    LEFT JOIN beca b ON s.idbeca = b.idbeca
+    LEFT JOIN carrera c ON s.idcarrera = c.idcarrera
+    LEFT JOIN area a ON s.idarea = a.idarea
+    LEFT JOIN grado g ON s.idgrado = g.idgrado
+    LEFT JOIN genero gen ON s.idgenero = gen.idgenero;
   `, function(error, results, fields) {   
     if (error) {
-      console.error('Error al crear el procedimiento almacenado de obtener multiples datos', error);
+      console.error('Error al obtener los datos:', error);
+      res.status(500).json({ error: 'Error al obtener los datos' });
     } else {
-      connection.query('CALL GetAllRecords(<nombre_de_tu_tabla>)', function(error, results, fields) {
-        if (error) {
-          console.error('Error al ejecutar el procedimiento almacenado GetAllRecords', error);
-          res.status(500).json({ error: 'Error al ejecutar el procedimiento almacenado' });
-        } else {
-          // Asignar los resultados a la variable data
-          data.value = results[0];
-          console.log('Se obtuvieron las columnas de las solicitudes correctamente');
-          res.json(results[0]);
-        }
-      });
+      console.log('Se obtuvieron las columnas de las solicitudes correctamente');
+      res.json(results);
     }
   });
 });
-
-
 
 app.get('/api/estados/1', async function(req, res) {
   connection.query('SELECT * FROM estado WHERE idestado = 1', function(error, results, fields) {
