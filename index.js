@@ -97,6 +97,29 @@ app.post('/api/upload', upload.array('pdfFiles, credencial, boleta, comprobante,
   });
 });
 
+app.get('/api/solicitud/:idsolicitud', async function(req, res) {
+  const idsolicitud = req.params.idsolicitud;
+  // Realiza la consulta a la base de datos para obtener los detalles del registro con el ID dado
+  connection.query(
+    'SELECT * FROM solicitud WHERE idsolicitud = ?',
+    [idsolicitud],
+    (error, results) => {
+      if (error) {
+        console.error('Error al obtener los detalles del registro:', error);
+        res.status(500).json({ error: 'Error al obtener los detalles del registro' });
+      } else {
+        if (results.length === 0) {
+          res.status(404).json({ error: 'Registro no encontrado' });
+        } else {
+          // Suponiendo que 'results' contiene los detalles del registro en formato JSON
+          const registro = results[0]; // Como solo debería haber un resultado, seleccionamos el primer elemento
+          res.json(registro);
+        }
+      }
+    }
+  );
+});
+
 // http://localhost:3000/
 app.get('/api/login', async function(req, res) {
     try {
@@ -298,7 +321,7 @@ app.get('/api/becas/4', async function(req, res) {
 
 app.get('/api/columns', async function(req, res) {
   connection.query(`
-    SELECT s.nombre, b.beca as beca, c.carrera as carrera, a.area as area, g.grado as grado, gen.genero as genero
+    SELECT s.idsolicitud, s.nombre, b.beca as beca, c.carrera as carrera, a.area as area, g.grado as grado, gen.genero as genero
     FROM solicitud s
     LEFT JOIN beca b ON s.idbeca = b.idbeca
     LEFT JOIN carrera c ON s.idcarrera = c.idcarrera
