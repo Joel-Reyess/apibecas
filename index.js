@@ -120,6 +120,46 @@ app.get('/api/solicitud/:idsolicitud', async function(req, res) {
   );
 });
 
+// Ruta para actualizar el estado de un registro por su ID
+app.put('/api/solicitud/:idsolicitud', async function(req, res) {
+  const idsolicitud = req.params.idsolicitud;
+  const { idestado } = req.body;
+
+  // Realiza la consulta a la base de datos para actualizar el estado del registro
+  connection.query(
+    'UPDATE solicitud SET idestado = ? WHERE idsolicitud = ?',
+    [idestado, idsolicitud],
+    (error, results) => {
+      if (error) {
+        console.error('Error al actualizar el estado del registro:', error);
+        res.status(500).json({ error: 'Error al actualizar el estado del registro' });
+      } else {
+        if (results.affectedRows === 0) {
+          // No se encontró el registro con el ID proporcionado
+          res.status(404).json({ error: 'Registro no encontrado' });
+        } else {
+          // Se actualizó el estado del registro correctamente
+          res.json({ message: 'Registro actualizado correctamente' });
+        }
+      }
+    }
+  );
+});
+
+app.get('/api/solicitud/enproceso', async function(req, res) {
+  connection.query(
+    'SELECT * FROM solicitud WHERE idestado = 2', // ID 2 corresponde al estado "En proceso"
+    (error, results) => {
+      if (error) {
+        console.error('Error al obtener los detalles del registro:', error);
+        res.status(500).json({ error: 'Error al obtener los detalles del registro' });
+      } else {
+        res.json(results);
+      }
+    }
+  );
+});
+
 // http://localhost:3000/
 app.get('/api/login', async function(req, res) {
     try {
@@ -339,6 +379,69 @@ app.get('/api/columns', async function(req, res) {
   });
 });
 
+app.get('/api/columns/proceso', async function(req, res) {
+  connection.query(`
+    SELECT s.idsolicitud, s.nombre, b.beca as beca, c.carrera as carrera, a.area as area, g.grado as grado, gen.genero as genero
+    FROM solicitud s
+    LEFT JOIN beca b ON s.idbeca = b.idbeca
+    LEFT JOIN carrera c ON s.idcarrera = c.idcarrera
+    LEFT JOIN area a ON s.idarea = a.idarea
+    LEFT JOIN grado g ON s.idgrado = g.idgrado
+    LEFT JOIN genero gen ON s.idgenero = gen.idgenero
+    WHERE s.idestado = 2;  -- Add this WHERE clause to filter records by idestado = 2
+  `, function(error, results, fields) {   
+    if (error) {
+      console.error('Error al obtener los datos:', error);
+      res.status(500).json({ error: 'Error al obtener los datos' });
+    } else {
+      console.log('Se obtuvieron las columnas de las solicitudes correctamente');
+      res.json(results);
+    }
+  });
+});
+
+app.get('/api/columns/rechazada', async function(req, res) {
+  connection.query(`
+    SELECT s.idsolicitud, s.nombre, b.beca as beca, c.carrera as carrera, a.area as area, g.grado as grado, gen.genero as genero
+    FROM solicitud s
+    LEFT JOIN beca b ON s.idbeca = b.idbeca
+    LEFT JOIN carrera c ON s.idcarrera = c.idcarrera
+    LEFT JOIN area a ON s.idarea = a.idarea
+    LEFT JOIN grado g ON s.idgrado = g.idgrado
+    LEFT JOIN genero gen ON s.idgenero = gen.idgenero
+    WHERE s.idestado = 3;  
+  `, function(error, results, fields) {   
+    if (error) {
+      console.error('Error al obtener los datos:', error);
+      res.status(500).json({ error: 'Error al obtener los datos' });
+    } else {
+      console.log('Se obtuvieron las columnas de las solicitudes correctamente');
+      res.json(results);
+    }
+  });
+});
+
+app.get('/api/columns/aprovadas', async function(req, res) {
+  connection.query(`
+    SELECT s.idsolicitud, s.nombre, b.beca as beca, c.carrera as carrera, a.area as area, g.grado as grado, gen.genero as genero
+    FROM solicitud s
+    LEFT JOIN beca b ON s.idbeca = b.idbeca
+    LEFT JOIN carrera c ON s.idcarrera = c.idcarrera
+    LEFT JOIN area a ON s.idarea = a.idarea
+    LEFT JOIN grado g ON s.idgrado = g.idgrado
+    LEFT JOIN genero gen ON s.idgenero = gen.idgenero
+    WHERE s.idestado = 4;  
+  `, function(error, results, fields) {   
+    if (error) {
+      console.error('Error al obtener los datos:', error);
+      res.status(500).json({ error: 'Error al obtener los datos' });
+    } else {
+      console.log('Se obtuvieron las columnas de las solicitudes correctamente');
+      res.json(results);
+    }
+  });
+});
+
 app.get('/api/estados/1', async function(req, res) {
   connection.query('SELECT * FROM estado WHERE idestado = 1', function(error, results, fields) {
     if (error) {
@@ -398,6 +501,16 @@ app.get('/api/genero', async function(req, res) {
     if (error) {
       console.error('Error al obtener el genero:', error);
       res.status(500).json({ error: 'Error al obtener el genero' });
+    } else {
+      res.json(results);
+    }
+  });
+});
+app.get('/api/estado', async function(req, res) {
+  connection.query('SELECT * FROM estado', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener el estado:', error);
+      res.status(500).json({ error: 'Error al obtener el estado' });
     } else {
       res.json(results);
     }
