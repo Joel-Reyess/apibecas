@@ -9,6 +9,7 @@ const app = express();
 const session = require('express-session');
 const path = require('path');
 const fs = require('fs');
+const { error } = require('console');
 
 app.use(cors());
 app.use(express.static('public'));
@@ -44,28 +45,18 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'static')));
 
 
-
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Establece la carpeta de destino para los archivos cargados
+    cb(null, 'uploads/');
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname); // Establece el nombre único para el archivo
+    cb(null, Date.now() + '-' + file.originalname);
   }
 });
 
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, 'uploads/'); // Establece la carpeta de destino para los archivos cargados
-    },
-    filename: function (req, file, cb) {
-      cb(null, Date.now() + '-' + file.originalname); // Establece el nombre único para el archivo
-    }
-  })
-});
+const upload = multer({ storage });
 
-app.post('/api/upload', upload.array('pdfFiles, credencial, boleta, comprobante, compromiso, conducta', 12), function (req, res, next) {
+app.post('/api/upload', upload.array('pdfFiles', 12), function (req, res, next) {
   if (!req.files || req.files.length === 0) {
     return res.status(400).send('No se cargaron archivos.');
   }
@@ -88,7 +79,7 @@ app.post('/api/upload', upload.array('pdfFiles, credencial, boleta, comprobante,
   connection.query(insertQuery, [fileUrls.map(url => [url])], function (err, result) {
     if (err) {
       console.log(err);
-      return res.status(500).send('Error al insertar las rutas de los archivos en la base de datos.');
+      return res.status(500).send('Error al insertar las rutas de los archivos en la base de datos.', err);
     }
 
     console.log('Rutas de archivos insertadas en la base de datos:', result);
