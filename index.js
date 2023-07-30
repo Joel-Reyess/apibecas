@@ -1,8 +1,6 @@
 const mysql = require('mysql');
 const express = require("express");
-//const fileUpload = require('express-fileupload');
 const multer  = require('multer');
-//const upload = multer({ dest: 'uploads/' })
 const axios = require('axios');
 const cors = require("cors");
 const app = express();
@@ -47,46 +45,89 @@ app.use(express.static(path.join(__dirname, 'static')));
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+    cb(null, path.join(__dirname, 'uploads/'));
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + '-' + file.originalname);
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage: storage })
 
-app.post('/api/upload', upload.array('pdfFiles', 12), function (req, res, next) {
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).send('No se cargaron archivos.');
-  }
+app.post('/upload', upload.fields([
+  { name: 'credencial', maxCount: 1 },
+  { name: 'boleta', maxCount: 1 },
+  { name: 'comprobante', maxCount: 1 },
+  { name: 'compromiso', maxCount: 1 },
+  { name: 'conducta', maxCount: 1 },
+]), (req, res) => {
+  try {
+    const files = req.files;
+    const insertedFiles = [];
 
-  // Accede a los archivos cargados utilizando req.files
-  console.log('Archivos cargados:', req.files);
-
-  // Array para almacenar las rutas de los archivos cargados
-  const fileUrls = [];
-
-  // Recorre los archivos cargados y almacena sus rutas en el array
-  req.files.forEach(file => {
-    const filePath = path.join(__dirname, file.path);
-    fileUrls.push(filePath);
-  });
-
-  // Aquí puedes guardar las rutas de los archivos en la base de datos
-  // Utiliza la conexión "connection" para ejecutar la consulta de inserción
-  const insertQuery = 'INSERT INTO documentos (documento) VALUES ?';
-  connection.query(insertQuery, [fileUrls.map(url => [url])], function (err, result) {
-    if (err) {
-      console.log(err);
-      return res.status(500).send('Error al insertar las rutas de los archivos en la base de datos.', err);
+    for (const key in files) {
+      if (Object.hasOwnProperty.call(files, key)) {
+        const file = files[key][0];
+        const filePath = path.join(__dirname, 'uploads', file.filename);
+        fs.renameSync(file.path, filePath);
+        insertedFiles.push(filePath); // Solo guarda la ruta del archivo en el arreglo
+      }
     }
 
-    console.log('Rutas de archivos insertadas en la base de datos:', result);
+    // Insertar las rutas de los archivos en la base de datos
+    if (insertedFiles.length > 0) {
+      const query = 'INSERT INTO documentos (documento) VALUES ?';
+      const values = insertedFiles.map(file => [file]);
 
-    res.send('Archivos cargados exitosamente.');
-  });
+      connection.query(query, [values], (err, result) => {
+        if (err) {
+          console.error('Error al insertar en la base de datos:', err);
+          res.status(500).json({ message: 'Error al insertar en la base de datos' });
+        } else {
+          console.log('Archivos insertados en la base de datos');
+          res.status(200).json({ message: 'Archivos cargados y almacenados correctamente' });
+        }
+      });
+    } else {
+      res.status(400).json({ message: 'No se recibieron archivos para cargar' });
+    }
+  } catch (error) {
+    console.error('Error al cargar los archivos:', error);
+    res.status(500).json({ message: 'Error al cargar los archivos' });
+  }
 });
+// app.post('/api/upload', upload.array('pdfFiles', 12), function (req, res, next) {
+//   if (!req.files || req.files.length === 0) {
+//     return res.status(400).send('No se cargaron archivos.');
+//   }
+
+//   const filesData = JSON.parse(req.body.pdfFiles);
+
+//   if (!Array.isArray(filesData) || filesData.length === 0) {
+//     return res.status(400).send('No se enviaron datos de los archivos correctamente.');
+//   }
+
+//   const fileUrls = [];
+
+//   filesData.forEach(({ name, file }) => {
+//     const filePath = path.join(__dirname, file.path);
+//     fileUrls.push({ name, path: filePath }); // Save both name and path
+//   });
+
+//   const insertQuery = 'INSERT INTO documentos (documento) VALUES ?';
+//   const values = fileUrls.map(({ name, path }) => [`${name} - ${path}`]); // Combine name and path
+
+//   connection.query(insertQuery, [values], function (err, result) {
+//     if (err) {
+//       console.log(err);
+//       return res.status(500).send('Error al insertar las rutas de los archivos en la base de datos.', err);
+//     }
+
+//     console.log('Rutas de archivos insertadas en la base de datos:', result);
+
+//     res.send('Archivos cargados exitosamente.');
+//   });
+// });
 
 app.get('/api/solicitud/:idsolicitud', async function(req, res) {
   const idsolicitud = req.params.idsolicitud;
@@ -299,19 +340,6 @@ app.get('/api/becas/2', function(req, res) {
   });
 });
 
-connection.query(`
-  CREATE PROCEDURE GetBecaDep(IN becaIdep INT)
-  BEGIN
-    SELECT * FROM beca WHERE idbeca = becaIdep;
-  END
-`, function(error, results, fields) {
-  if (error) {
-    console.error('Error al crear el procedimiento almacenado:', error);
-  } else {
-    console.log('Procedimiento almacenado deportivo creado exitosamente');
-  }
-});
-
 app.get('/api/becas/3', async function(req, res) {
   connection.query('CALL GetBecaDep(3)', function(error, results, fields) {
     if (error) {
@@ -344,6 +372,168 @@ app.get('/api/becas/4', async function(req, res) {
     if (error) {
       console.error('Error al obtener las becas:', error);
       res.status(500).json({ error: 'Error al obtener las becas' });
+    } else {
+      res.json(results[0][0]);
+    }
+  });
+});
+
+connection.query('DROP PROCEDURE IF EXISTS GetBecaExce', async function(error, results, fields) {
+  if (error) {
+    console.error('Error al eliminar el procedimiento almacenado:', error);
+  } else {
+    console.log('Procedimiento almacenado eliminado exitosamente');
+    // Aquí puedes crear el procedimiento almacenado nuevamente
+    connection.query('CREATE PROCEDURE GetBecaExce(IN becaId INT) BEGIN SELECT * FROM beca WHERE idbeca = becaId; END', function(error, results, fields) {
+      if (error) {
+        console.error('Error al crear el procedimiento almacenado:', error);
+      } else {
+        console.log('Procedimiento almacenado creado para beca Excelencia exitosamente');
+      }
+    });
+  }
+});
+
+app.get('/api/becas/5', async function(req, res) {
+  connection.query('CALL GetBecaExce(5)', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener las becas de excelencia:', error);
+      res.status(500).json({ error: 'Error al obtener las becas de excelencia' });
+    } else {
+      res.json(results[0][0]);
+    }
+  });
+});
+
+connection.query('DROP PROCEDURE IF EXISTS GetBecaInclu', async function(error, results, fields) {
+  if (error) {
+    console.error('Error al eliminar el procedimiento almacenado:', error);
+  } else {
+    console.log('Procedimiento almacenado eliminado exitosamente');
+    // Aquí puedes crear el procedimiento almacenado nuevamente
+    connection.query('CREATE PROCEDURE GetBecaInclu(IN becaId INT) BEGIN SELECT * FROM beca WHERE idbeca = becaId; END', function(error, results, fields) {
+      if (error) {
+        console.error('Error al crear el procedimiento almacenado:', error);
+      } else {
+        console.log('Procedimiento almacenado creado para beca Inclucion exitosamente');
+      }
+    });
+  }
+});
+
+app.get('/api/becas/6', async function(req, res) {
+  connection.query('CALL GetBecaInclu(6)', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener las becas de Inclusion:', error);
+      res.status(500).json({ error: 'Error al obtener las becas de Inclulsion' });
+    } else {
+      res.json(results[0][0]);
+    }
+  });
+});
+
+connection.query('DROP PROCEDURE IF EXISTS GetBecaPost', async function(error, results, fields) {
+  if (error) {
+    console.error('Error al eliminar el procedimiento almacenado:', error);
+  } else {
+    console.log('Procedimiento almacenado eliminado exitosamente');
+    // Aquí puedes crear el procedimiento almacenado nuevamente
+    connection.query('CREATE PROCEDURE GetBecaPost(IN becaId INT) BEGIN SELECT * FROM beca WHERE idbeca = becaId; END', function(error, results, fields) {
+      if (error) {
+        console.error('Error al crear el procedimiento almacenado:', error);
+      } else {
+        console.log('Procedimiento almacenado creado para beca Postgrado exitosamente');
+      }
+    });
+  }
+});
+
+app.get('/api/becas/7', async function(req, res) {
+  connection.query('CALL GetBecaPost(7)', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener las becas de Postgrado:', error);
+      res.status(500).json({ error: 'Error al obtener las becas de Postgrado' });
+    } else {
+      res.json(results[0][0]);
+    }
+  });
+});
+
+connection.query('DROP PROCEDURE IF EXISTS GetBecaRefe', async function(error, results, fields) {
+  if (error) {
+    console.error('Error al eliminar el procedimiento almacenado:', error);
+  } else {
+    console.log('Procedimiento almacenado eliminado exitosamente');
+    // Aquí puedes crear el procedimiento almacenado nuevamente
+    connection.query('CREATE PROCEDURE GetBecaRefe(IN becaId INT) BEGIN SELECT * FROM beca WHERE idbeca = becaId; END', function(error, results, fields) {
+      if (error) {
+        console.error('Error al crear el procedimiento almacenado:', error);
+      } else {
+        console.log('Procedimiento almacenado creado para beca Referencia exitosamente');
+      }
+    });
+  }
+});
+
+app.get('/api/becas/8', async function(req, res) {
+  connection.query('CALL GetBecaRefe(8)', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener las becas de Referencia:', error);
+      res.status(500).json({ error: 'Error al obtener las becas de Referencia' });
+    } else {
+      res.json(results[0][0]);
+    }
+  });
+});
+
+connection.query('DROP PROCEDURE IF EXISTS GetBecaRein', async function(error, results, fields) {
+  if (error) {
+    console.error('Error al eliminar el procedimiento almacenado:', error);
+  } else {
+    console.log('Procedimiento almacenado eliminado exitosamente');
+    // Aquí puedes crear el procedimiento almacenado nuevamente
+    connection.query('CREATE PROCEDURE GetBecaRein(IN becaId INT) BEGIN SELECT * FROM beca WHERE idbeca = becaId; END', function(error, results, fields) {
+      if (error) {
+        console.error('Error al crear el procedimiento almacenado:', error);
+      } else {
+        console.log('Procedimiento almacenado creado para beca Reincorporacion exitosamente');
+      }
+    });
+  }
+});
+
+app.get('/api/becas/9', async function(req, res) {
+  connection.query('CALL GetBecaRein(9)', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener las becas de Reincorporacion:', error);
+      res.status(500).json({ error: 'Error al obtener las becas de Reincorporacion' });
+    } else {
+      res.json(results[0][0]);
+    }
+  });
+});
+
+connection.query('DROP PROCEDURE IF EXISTS GetBecaTrans', async function(error, results, fields) {
+  if (error) {
+    console.error('Error al eliminar el procedimiento almacenado:', error);
+  } else {
+    console.log('Procedimiento almacenado eliminado exitosamente');
+    // Aquí puedes crear el procedimiento almacenado nuevamente
+    connection.query('CREATE PROCEDURE GetBecaTrans(IN becaId INT) BEGIN SELECT * FROM beca WHERE idbeca = becaId; END', function(error, results, fields) {
+      if (error) {
+        console.error('Error al crear el procedimiento almacenado:', error);
+      } else {
+        console.log('Procedimiento almacenado creado para beca Transporte exitosamente');
+      }
+    });
+  }
+});
+
+app.get('/api/becas/10', async function(req, res) {
+  connection.query('CALL GetBecaTrans(10)', function(error, results, fields) {
+    if (error) {
+      console.error('Error al obtener las becas de Transporte:', error);
+      res.status(500).json({ error: 'Error al obtener las becas de Transporte' });
     } else {
       res.json(results[0][0]);
     }
