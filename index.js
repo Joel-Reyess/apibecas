@@ -60,6 +60,10 @@ app.post('/upload', upload.fields([
   { name: 'comprobante', maxCount: 1 },
   { name: 'compromiso', maxCount: 1 },
   { name: 'conducta', maxCount: 1 },
+  { name: 'medico', maxCount: 1 },
+  { name: 'constancia', maxCount: 1 },
+  { name: 'escrito', maxCount: 1 },
+  { name: 'pagoref', maxCount: 1 },
 ]), (req, res) => {
   try {
     const files = req.files;
@@ -96,38 +100,6 @@ app.post('/upload', upload.fields([
     res.status(500).json({ message: 'Error al cargar los archivos' });
   }
 });
-// app.post('/api/upload', upload.array('pdfFiles', 12), function (req, res, next) {
-//   if (!req.files || req.files.length === 0) {
-//     return res.status(400).send('No se cargaron archivos.');
-//   }
-
-//   const filesData = JSON.parse(req.body.pdfFiles);
-
-//   if (!Array.isArray(filesData) || filesData.length === 0) {
-//     return res.status(400).send('No se enviaron datos de los archivos correctamente.');
-//   }
-
-//   const fileUrls = [];
-
-//   filesData.forEach(({ name, file }) => {
-//     const filePath = path.join(__dirname, file.path);
-//     fileUrls.push({ name, path: filePath }); // Save both name and path
-//   });
-
-//   const insertQuery = 'INSERT INTO documentos (documento) VALUES ?';
-//   const values = fileUrls.map(({ name, path }) => [`${name} - ${path}`]); // Combine name and path
-
-//   connection.query(insertQuery, [values], function (err, result) {
-//     if (err) {
-//       console.log(err);
-//       return res.status(500).send('Error al insertar las rutas de los archivos en la base de datos.', err);
-//     }
-
-//     console.log('Rutas de archivos insertadas en la base de datos:', result);
-
-//     res.send('Archivos cargados exitosamente.');
-//   });
-// });
 
 app.get('/api/solicitud/:idsolicitud', async function(req, res) {
   const idsolicitud = req.params.idsolicitud;
@@ -171,6 +143,32 @@ app.put('/api/solicitud/:idsolicitud', async function(req, res) {
           res.status(404).json({ error: 'Registro no encontrado' });
         } else {
           // Se actualizó el estado del registro correctamente
+          res.json({ message: 'Registro actualizado correctamente' });
+        }
+      }
+    }
+  );
+});
+
+// Ruta para actualizar el porcentaje de un registro por su ID
+app.put('/api/solicitudes/:idsolicitud', async function(req, res) {
+  const idsolicitud = req.params.idsolicitud;
+  const { idestado, porcentaje } = req.body;
+
+  // Realiza la consulta a la base de datos para actualizar el porcentaje del registro
+  connection.query(
+    'UPDATE solicitud SET idestado = ?, porcentaje = ? WHERE idsolicitud = ?',
+    [idestado, porcentaje, idsolicitud],
+    (error, results) => {
+      if (error) {
+        console.error('Error al actualizar el porcentaje del registro:', error);
+        res.status(500).json({ error: 'Error al actualizar el porcentaje del registro' });
+      } else {
+        if (results.affectedRows === 0) {
+          // No se encontró el registro con el ID proporcionado
+          res.status(404).json({ error: 'Registro no encontrado' });
+        } else {
+          // Se actualizó el porcentaje del registro correctamente
           res.json({ message: 'Registro actualizado correctamente' });
         }
       }
