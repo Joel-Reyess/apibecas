@@ -125,6 +125,37 @@ app.get('/api/solicitud/:idsolicitud', async function(req, res) {
 });
 
 // Ruta para actualizar el estado de un registro por su ID
+app.get('/api/documentos', async function(req, res) {
+  const idDocumentos = [1, 2];
+
+  // Realiza la consulta a la base de datos para obtener los documentos con los IDs especificados
+  connection.query(
+    'SELECT * FROM documentos WHERE iddocumento IN (?)',
+    [idDocumentos],
+    (error, results) => {
+      if (error) {
+        console.error('Error al obtener los documentos:', error);
+        res.status(500).json({ error: 'Error al obtener los documentos' });
+      } else {
+        res.json(results);
+      }
+    }
+  );
+});
+
+app.get('/api/documentos/:documento', (req, res) => {
+  const documento = req.params.documento;
+  const filePath = path.join(__dirname, 'uploads/', documento);
+
+  // Usa res.download para enviar el archivo como una descarga adjunta
+  res.download(filePath, documento, (err) => {
+    if (err) {
+      console.error('Error al descargar el documento:', err);
+      res.status(500).json({ error: 'Error al descargar el documento' });
+    }
+  });
+});
+
 app.put('/api/solicitud/:idsolicitud', async function(req, res) {
   const idsolicitud = req.params.idsolicitud;
   const { idestado } = req.body;
@@ -149,6 +180,7 @@ app.put('/api/solicitud/:idsolicitud', async function(req, res) {
     }
   );
 });
+
 
 // Ruta para actualizar el porcentaje de un registro por su ID
 app.put('/api/solicitudes/:idsolicitud', async function(req, res) {
@@ -179,6 +211,34 @@ app.put('/api/solicitudes/:idsolicitud', async function(req, res) {
 app.get('/api/solicitud/enproceso', async function(req, res) {
   connection.query(
     'SELECT * FROM solicitud WHERE idestado = 2', // ID 2 corresponde al estado "En proceso"
+    (error, results) => {
+      if (error) {
+        console.error('Error al obtener los detalles del registro:', error);
+        res.status(500).json({ error: 'Error al obtener los detalles del registro' });
+      } else {
+        res.json(results);
+      }
+    }
+  );
+});
+
+app.get('/api/socioeconomico/estatic', async function(req, res) {
+  connection.query(
+    'SELECT * FROM socioeconomicos WHERE idsocioeconomico = 7', 
+    (error, results) => {
+      if (error) {
+        console.error('Error al obtener los detalles del registro:', error);
+        res.status(500).json({ error: 'Error al obtener los detalles del registro' });
+      } else {
+        res.json(results);
+      }
+    }
+  );
+});
+
+app.get('/api/carta/estatic', async function(req, res) {
+  connection.query(
+    'SELECT * FROM carta WHERE idcarta = 12', 
     (error, results) => {
       if (error) {
         console.error('Error al obtener los detalles del registro:', error);
