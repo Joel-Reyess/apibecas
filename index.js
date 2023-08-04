@@ -42,7 +42,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'static')));
 
-
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(__dirname, 'uploads/'));
@@ -101,6 +100,48 @@ app.post('/upload', upload.fields([
   }
 });
 
+
+// Ruta para actualizar el estado de un registro por su ID
+app.get('/api/documentos', async function(req, res) {
+  const idDocumentos = [1, 2];
+
+  // Realiza la consulta a la base de datos para obtener los documentos con los IDs especificados
+  connection.query(
+    'SELECT * FROM documentos WHERE iddocumento IN (?)',
+    [idDocumentos],
+    (error, results) => {
+      if (error) {
+        console.error('Error al obtener los documentos:', error);
+        res.status(500).json({ error: 'Error al obtener los documentos' });
+      } else {
+        // Solo devuelves el nombre del archivo y no la ruta completa
+        const documentos = results.map(item => {
+          return {
+            iddocumento: item.iddocumento,
+            nombre: item.nombre,
+            // Solo envías el nombre del archivo en la respuesta, no la ruta completa
+            documento: item.documento.split('\\').pop(), // Solo obtienes el nombre del archivo
+          };
+        });
+        res.json(documentos);
+      }
+    }
+  );
+});
+
+app.get('/api/documentos/:documento', (req, res) => {
+  const documento = req.params.documento;
+  const filePath = path.join(__dirname, 'uploads', documento);
+  
+  // Usa res.download para enviar el archivo como una descarga adjunta
+  res.download(filePath, documento, (err) => {
+    if (err) {
+      console.error('Error al descargar el documento:', err);
+      res.status(500).json({ error: 'Error al descargar el documento' });
+    }
+  });
+});
+
 app.get('/api/solicitud/:idsolicitud', async function(req, res) {
   const idsolicitud = req.params.idsolicitud;
   // Realiza la consulta a la base de datos para obtener los detalles del registro con el ID dado
@@ -122,38 +163,6 @@ app.get('/api/solicitud/:idsolicitud', async function(req, res) {
       }
     }
   );
-});
-
-// Ruta para actualizar el estado de un registro por su ID
-app.get('/api/documentos', async function(req, res) {
-  const idDocumentos = [1, 2];
-
-  // Realiza la consulta a la base de datos para obtener los documentos con los IDs especificados
-  connection.query(
-    'SELECT * FROM documentos WHERE iddocumento IN (?)',
-    [idDocumentos],
-    (error, results) => {
-      if (error) {
-        console.error('Error al obtener los documentos:', error);
-        res.status(500).json({ error: 'Error al obtener los documentos' });
-      } else {
-        res.json(results);
-      }
-    }
-  );
-});
-
-app.get('/api/documentos/:documento', (req, res) => {
-  const documento = req.params.documento;
-  const filePath = path.join(__dirname, 'uploads/', documento);
-
-  // Usa res.download para enviar el archivo como una descarga adjunta
-  res.download(filePath, documento, (err) => {
-    if (err) {
-      console.error('Error al descargar el documento:', err);
-      res.status(500).json({ error: 'Error al descargar el documento' });
-    }
-  });
 });
 
 app.put('/api/solicitud/:idsolicitud', async function(req, res) {
